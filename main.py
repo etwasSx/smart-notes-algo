@@ -1,7 +1,8 @@
 # подключение требуемых библиотек
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QListWidget, QLabel, QPushButton, QLineEdit, QTextEdit, QHBoxLayout, QVBoxLayout
+    QApplication, QWidget, QListWidget, QLabel, QPushButton, QLineEdit, QTextEdit, QHBoxLayout, QVBoxLayout,
+    QInputDialog
 )
 
 import json
@@ -9,15 +10,7 @@ import json
 # Подключаем библиотеку json
 
 # Тут у нас будет структура для заметок
-notes = {
-    "Добро пожаловать!": {
-        "текст": "Это самая первая заметка, скоро их будет больше",
-        "теги": ["первый", "привет"]
-    }
-}
-# Теперь эту структуру мы можем сохранить в файл
-with open("notes.json", "w", encoding="utf-8") as file:
-    json.dump(notes, file)
+notes = {}  # Теперь наш словарь будет загружаться из файла и нам не надо будет создавать ручками
 
 # Создадим окно приложения
 app = QApplication([])
@@ -95,23 +88,71 @@ def show_note():
     list_tags.clear()
     list_tags.addItems(notes[key]["теги"])
 
-''' ЗАПУСК ПРИЛОЖЕНИЯ '''
-list_notes.itemClicked.connect(show_note)
-# Скобочки были лишние) На этом первая часть реализации функционала закончилась.
 
-# stretch делит в пропорции
+# Функция для создания заметки
+def add_note():
+    note_name, ok = QInputDialog.getText(main_window, "Добавить", "Название:")
+    if ok and note_name != "":  # если не пустой текст заметки и нажат ок
+        notes[note_name] = {"текст": "", "теги": []}  # Пока значения пустые
+        list_notes.addItem(note_name)
+        list_tags.addItems(notes[note_name]["теги"])
+        with open("notes.json", "w", encoding="utf-8") as file:
+            json.dump(notes, file, ensure_ascii=False)  # последний параметр нужен чтобы файл был виден на русском
+
+
+# Функция для Сохранения заметки
+def save_note():
+    if list_notes.selectedItems():  # Если выбран элемент, заметка
+        key = list_notes.selectedItems()[0].text() # Название заметки *
+        notes[key]["текст"] = field_text.toPlainText()
+        with open("notes.json", "w", encoding="utf-8") as file: # тут была ошибка. Надо добавить as file
+            json.dump(notes, file, ensure_ascii=False)
+    else:
+        print("Заметка не выбрана. Сохранять нечего")
+
+
+# Функция для удаления
+def delete_note():
+    if list_notes.selectedItems(): # если какая то заметка выбрана
+        key = list_notes.selectedItems()[0].text() # Берем название заметки
+        del notes[key] # Удаляем ее по названию
+        list_notes.clear()
+        list_tags.clear()
+        field_text.clear() # Чистим все окна
+        list_notes.addItems(notes)  # обновляем содержимое списка заметок
+        with open("notes.json", "w", encoding="utf-8") as file: # Сохраним изменения в файл
+            json.dump(notes, file, ensure_ascii=False)
+
+    else:
+        print("Заметка не выбрана. Нечего удалять")
+
+
+
+''' ЗАПУСК ПРИЛОЖЕНИЯ '''
+
+''' функции обработчики'''
+# Покажем список заметок пользователю
+list_notes.itemClicked.connect(show_note)
+
+# Создадим заметку
+btn_note_create.clicked.connect(add_note)
+
+# Сохраним заметку
+btn_note_save.clicked.connect(save_note)
+
+# Удалим заметку. Все отлично работает
+btn_note_delete.clicked.connect(delete_note)
+''' ОКНО '''
 main_window.setLayout(layout_notes)
 
 main_window.show()
-
 # Теперь добавим считывание из файла и покажем название заметки в списке
 with open("notes.json", "r", encoding="utf-8") as file:
     notes = json.load(file)
+
 list_notes.addItems(notes)
 
 # У нас появилась заметка. Но при нажатии на нее ничего не открывается. Исправим.
 # Создадим для этого функцию обработчик
 
 app.exec_()
-
-# Теперь на очереди работа с json и организация работы некоторых кнопок
