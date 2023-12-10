@@ -65,6 +65,7 @@ column_right.addLayout(row_2)
 # Теперь повторим те же действия, но для списка тегов
 column_right.addWidget(list_tags_label)
 column_right.addWidget(list_tags)
+column_right.addWidget(field_tag)
 
 # Остались кнопки
 row_3 = QHBoxLayout()
